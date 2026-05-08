@@ -18,6 +18,7 @@ import {
   Easing,
 } from 'react-native';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE } from 'react-native-maps';
+import Svg, { Circle as SvgCircle, Rect } from 'react-native-svg';
 import * as Location from 'expo-location';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -135,8 +136,10 @@ export default function ClientHomeScreen() {
   const mapRef = useRef<MapView>(null);
   const autocompleteTimer = useRef<any>(null);
   const sessionToken = useRef(`${Date.now()}`);
+  const locationWatcher = useRef<any>(null);
 
   const [location, setLocation] = useState<any>(null);
+  const [heading, setHeading] = useState<number>(0);
   const [destination, setDestination] = useState('');
   const [destCoords, setDestCoords] = useState<any>(null);
   const [tiers, setTiers] = useState<any[]>([]);
@@ -177,6 +180,14 @@ export default function ClientHomeScreen() {
     };
   }, []);
 
+  useEffect(() => {
+    return () => {
+      if (locationWatcher.current) {
+        locationWatcher.current.remove();
+      }
+    };
+  }, []);
+
   const animateToUser = (coords: any) => {
     mapRef.current?.animateToRegion(
       {
@@ -208,17 +219,27 @@ export default function ClientHomeScreen() {
       return;
     }
 
-    const lastKnown = await Location.getLastKnownPositionAsync({});
-    if (lastKnown?.coords) {
-      setLocation(lastKnown.coords);
-      animateToUser(lastKnown.coords);
-    }
-
-    const loc = await Location.getCurrentPositionAsync({
-      accuracy: Location.Accuracy.Balanced,
-    });
+    const loc = await Location.getCurrentPositionAsync({});
     setLocation(loc.coords);
     animateToUser(loc.coords);
+
+    if (locationWatcher.current) {
+      locationWatcher.current.remove();
+    }
+
+    locationWatcher.current = await Location.watchPositionAsync(
+      {
+        accuracy: Location.Accuracy.BestForNavigation,
+        timeInterval: 2000,
+        distanceInterval: 5,
+      },
+      (newLoc) => {
+        setLocation(newLoc.coords);
+        if (newLoc.coords.heading !== null && newLoc.coords.heading >= 0) {
+          setHeading(newLoc.coords.heading);
+        }
+      }
+    );
   };
 
   const loadSearchHistory = async () => {
@@ -467,27 +488,44 @@ export default function ClientHomeScreen() {
           </>
         )}
 
-        {/* Blue dot — only when idle (no destination selected yet) */}
-        {!destCoords && location && (
+        {/* Custom location marker */}
+        {location && (
           <Marker
-            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+            coordinate={{
+              latitude: location.latitude,
+              longitude: location.longitude,
+            }}
             anchor={{ x: 0.5, y: 0.5 }}
+            flat
+            rotation={heading}
             zIndex={30}
-            tracksViewChanges={true}
+            tracksViewChanges
           >
-            <PulsingBlueDot />
-          </Marker>
-        )}
-
-        {/* Pickup pin — shown once a destination is chosen */}
-        {destCoords && location && (
-          <Marker
-            coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-            anchor={{ x: 0.5, y: 0.5 }}
-            zIndex={40}
-            tracksViewChanges={false}
-          >
-            <PickupPin />
+            <View collapsable={false} style={styles.locationSvgMarker}>
+              <Svg width={40} height={40} viewBox="0 0 40 40">
+                {/* Outer pulse ring */}
+                <SvgCircle
+                  cx={20}
+                  cy={20}
+                  r={18}
+                  fill="rgba(0,0,0,0.08)"
+                />
+                {/* White border */}
+                <SvgCircle
+                  cx={20}
+                  cy={20}
+                  r={10}
+                  fill="white"
+                />
+                {/* Black center dot */}
+                <SvgCircle
+                  cx={20}
+                  cy={20}
+                  r={7}
+                  fill="black"
+                />
+              </Svg>
+            </View>
           </Marker>
         )}
 
@@ -497,9 +535,42 @@ export default function ClientHomeScreen() {
             coordinate={destCoords}
             anchor={{ x: 0.5, y: 0.5 }}
             zIndex={41}
-            tracksViewChanges={false}
+            tracksViewChanges
           >
-            <DestPin />
+            <View collapsable={false} style={styles.destinationSvgMarker}>
+              <Svg width={32} height={32} viewBox="0 0 32 32">
+                {/* Outer ring */}
+                <Rect
+                  x={2}
+                  y={2}
+                  width={28}
+                  height={28}
+                  rx={6}
+                  ry={6}
+                  fill="rgba(0,0,0,0.08)"
+                />
+                {/* White border */}
+                <Rect
+                  x={6}
+                  y={6}
+                  width={20}
+                  height={20}
+                  rx={4}
+                  ry={4}
+                  fill="white"
+                />
+                {/* Black center square */}
+                <Rect
+                  x={10}
+                  y={10}
+                  width={12}
+                  height={12}
+                  rx={2}
+                  ry={2}
+                  fill="black"
+                />
+              </Svg>
+            </View>
           </Marker>
         )}
 
@@ -824,6 +895,14 @@ export default function ClientHomeScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
   map: { ...StyleSheet.absoluteFillObject },
+  locationSvgMarker: {
+    width: 40,
+    height: 40,
+  },
+  destinationSvgMarker: {
+    width: 32,
+    height: 32,
+  },
 
   // Modern pulsing blue dot — fixed-size rings, opacity only
   blueDotContainer: {
