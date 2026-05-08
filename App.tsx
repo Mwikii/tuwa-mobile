@@ -1,16 +1,62 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { ActivityIndicator, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 
 import LoginScreen from './src/screens/auth/LoginScreen';
 import RegisterScreen from './src/screens/auth/RegisterScreen';
 import OTPScreen from './src/screens/auth/OTPScreen';
 import ClientHomeScreen from './src/screens/client/ClientHomeScreen';
-import DriverHomeScreen from './src/screens/driver/DriverHomeScreen';
+import RidesScreen from './src/screens/client/RidesScreen';
+import AccountScreen from './src/screens/client/AccountScreen';
 
 const Stack = createNativeStackNavigator();
+const Tab = createBottomTabNavigator();
+
+const ClientTabs = () => {
+  return (
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        headerShown: false,
+        tabBarStyle: {
+          backgroundColor: '#fff',
+          borderTopWidth: 1,
+          borderTopColor: '#f0f0f0',
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 64,
+        },
+        tabBarActiveTintColor: '#000',
+        tabBarInactiveTintColor: '#bbb',
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          letterSpacing: 0.3,
+        },
+        tabBarIcon: ({ focused, color }) => {
+          let iconName: keyof typeof Ionicons.glyphMap = 'car-outline';
+
+          if (route.name === 'Home') {
+            iconName = focused ? 'car' : 'car-outline';
+          } else if (route.name === 'Rides') {
+            iconName = focused ? 'time' : 'time-outline';
+          } else if (route.name === 'Account') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={22} color={color} />;
+        },
+      })}
+    >
+      <Tab.Screen name="Home" component={ClientHomeScreen} />
+      <Tab.Screen name="Rides" component={RidesScreen} />
+      <Tab.Screen name="Account" component={AccountScreen} />
+    </Tab.Navigator>
+  );
+};
 
 const AppNavigator = () => {
   const { user, loading } = useAuth();
@@ -31,10 +77,8 @@ const AppNavigator = () => {
           <Stack.Screen name="Register" component={RegisterScreen} />
           <Stack.Screen name="OTP" component={OTPScreen} />
         </>
-      ) : user.role === 'RIDER' ? (
-        <Stack.Screen name="ClientHome" component={ClientHomeScreen} />
       ) : (
-        <Stack.Screen name="DriverHome" component={DriverHomeScreen} />
+        <Stack.Screen name="ClientTabs" component={ClientTabs} />
       )}
     </Stack.Navigator>
   );
