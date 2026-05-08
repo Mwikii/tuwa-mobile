@@ -6,6 +6,8 @@ interface User {
   id: string;
   name: string;
   phone: string;
+  email?: string;
+  photoUrl?: string;
   role: 'RIDER' | 'DRIVER';
 }
 
@@ -18,6 +20,7 @@ interface AuthContextType {
   registerDriver: (data: any) => Promise<void>;
   logout: () => Promise<void>;
   saveUser: (token: string, user: User) => Promise<void>;
+  updateUser: (updates: Partial<User>) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType>({} as AuthContextType);
@@ -67,13 +70,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(user);
   };
 
-  const saveUser = async (token: string, user: User) => {
-    await SecureStore.setItemAsync('tuwa_token', token);
-    await SecureStore.setItemAsync('tuwa_user', JSON.stringify(user));
-    setToken(token);
-    setUser(user);
-  };
-
   const logout = async () => {
     await SecureStore.deleteItemAsync('tuwa_token');
     await SecureStore.deleteItemAsync('tuwa_user');
@@ -81,8 +77,26 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     setUser(null);
   };
 
+  const saveUser = async (token: string, user: User) => {
+    await SecureStore.setItemAsync('tuwa_token', token);
+    await SecureStore.setItemAsync('tuwa_user', JSON.stringify(user));
+    setToken(token);
+    setUser(user);
+  };
+
+  const updateUser = async (updates: Partial<User>) => {
+    const res = await api.put('/api/auth/profile', updates);
+    const updatedUser = { ...user, ...res.data.user } as User;
+    await SecureStore.setItemAsync('tuwa_user', JSON.stringify(updatedUser));
+    setUser(updatedUser);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, registerRider, registerDriver, logout, saveUser }}>
+    <AuthContext.Provider value={{
+      user, token, loading,
+      login, registerRider, registerDriver,
+      logout, saveUser, updateUser,
+    }}>
       {children}
     </AuthContext.Provider>
   );

@@ -8,6 +8,7 @@ import {
   StatusBar,
   Switch,
   Alert,
+  Image,
 } from 'react-native';
 import { useAuth } from '../../context/AuthContext';
 
@@ -37,7 +38,7 @@ const MenuItem = ({
   </TouchableOpacity>
 );
 
-export default function AccountScreen() {
+export default function AccountScreen({ navigation }: any) {
   const { user, logout } = useAuth();
   const [notifications, setNotifications] = useState(true);
 
@@ -63,16 +64,20 @@ export default function AccountScreen() {
 
         {/* Profile card */}
         <View style={styles.profileCard}>
-          <View style={styles.avatar}>
-            <Text style={styles.avatarText}>
-              {user?.name?.charAt(0).toUpperCase()}
-            </Text>
-          </View>
+          {user?.photoUrl ? (
+            <Image source={{ uri: user.photoUrl }} style={styles.avatarImage} />
+          ) : (
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {user?.name?.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name}</Text>
             <Text style={styles.profilePhone}>{user?.phone}</Text>
           </View>
-          <TouchableOpacity style={styles.editBtn} onPress={comingSoon}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => navigation.navigate('EditProfile')}>
             <Text style={styles.editBtnText}>Edit</Text>
           </TouchableOpacity>
         </View>
@@ -80,7 +85,7 @@ export default function AccountScreen() {
         {/* Rides & Payments */}
         <SectionHeader title="Rides & Payments" />
         <View style={styles.menuGroup}>
-          <MenuItem icon="📍" label="Saved Places" onPress={comingSoon} />
+          <MenuItem icon="📍" label="Saved Places" onPress={() => navigation.navigate('SavedPlaces')} />
           <MenuItem icon="💳" label="Payment Methods" onPress={comingSoon} />
           <MenuItem icon="🎁" label="Promotions" onPress={comingSoon} />
         </View>
@@ -113,9 +118,10 @@ export default function AccountScreen() {
         {/* Support */}
         <SectionHeader title="Support" />
         <View style={styles.menuGroup}>
-          <MenuItem icon="💬" label="Help & Support" onPress={comingSoon} />
+          <MenuItem icon="💬" label="Help & Support" onPress={() => navigation.navigate('Help')} />
           <MenuItem icon="⭐" label="Rate the App" onPress={comingSoon} />
-          <MenuItem icon="📄" label="Terms & Privacy" onPress={comingSoon} />
+          <MenuItem icon="📄" label="Terms & Conditions" onPress={() => navigation.navigate('Legal', { type: 'terms' })} />
+          <MenuItem icon="🔒" label="Privacy Notice" onPress={() => navigation.navigate('Legal', { type: 'privacy' })} />
         </View>
 
         {/* Sign out */}
@@ -167,6 +173,12 @@ const styles = StyleSheet.create({
     marginRight: 14,
   },
   avatarText: { color: '#fff', fontSize: 22, fontWeight: '800' },
+  avatarImage: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    marginRight: 14,
+  },
   profileInfo: { flex: 1 },
   profileName: { fontSize: 17, fontWeight: '700', color: '#000' },
   profilePhone: { fontSize: 13, color: '#bbb', marginTop: 2 },

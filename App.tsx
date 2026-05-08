@@ -12,9 +12,24 @@ import OTPScreen from './src/screens/auth/OTPScreen';
 import ClientHomeScreen from './src/screens/client/ClientHomeScreen';
 import RidesScreen from './src/screens/client/RidesScreen';
 import AccountScreen from './src/screens/client/AccountScreen';
+import EditProfileScreen from './src/screens/client/EditProfileScreen';
+import SavedPlacesScreen from './src/screens/client/SavedPlacesScreen';
+import HelpScreen from './src/screens/client/HelpScreen';
+import LegalScreen from './src/screens/client/LegalScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
+const AccountStack = createNativeStackNavigator();
+
+const AccountNavigator = () => (
+  <AccountStack.Navigator screenOptions={{ headerShown: false }}>
+    <AccountStack.Screen name="AccountMain" component={AccountScreen} />
+    <AccountStack.Screen name="EditProfile" component={EditProfileScreen} />
+    <AccountStack.Screen name="SavedPlaces" component={SavedPlacesScreen} />
+    <AccountStack.Screen name="Help" component={HelpScreen} />
+    <AccountStack.Screen name="Legal" component={LegalScreen} />
+  </AccountStack.Navigator>
+);
 
 const ClientTabs = () => {
   return (
@@ -53,7 +68,7 @@ const ClientTabs = () => {
     >
       <Tab.Screen name="Home" component={ClientHomeScreen} />
       <Tab.Screen name="Rides" component={RidesScreen} />
-      <Tab.Screen name="Account" component={AccountScreen} />
+      <Tab.Screen name="Account" component={AccountNavigator} />
     </Tab.Navigator>
   );
 };
